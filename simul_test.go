@@ -23,3 +23,20 @@ func TestGapBuffer(t *testing.T) {
 		t.Errorf("Left or right text was incorrect. Got right text, left text: %s, %s. Want: hello world., ''", gb.right, gb.left)
 	}
 }
+
+func TestBinaryTree(t *testing.T) {
+	val := 1
+	bt, err := NewBinaryTree(val)
+	if err != nil {
+		t.Errorf("Unable to create binary tree with initial value: %d", val)
+	}
+	bt.Insert(2)
+	if bt.right.value != 2 {
+		t.Errorf("Right node was incorrect. Got: %d. Want: 2", bt.right.value)
+	}
+	bt.Insert(-1)
+	if bt.left.value != -1 {
+		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.left.value)
+	}
+
+}

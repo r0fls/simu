@@ -1,7 +1,10 @@
 package simul
 
 import (
+	"errors"
 	"fmt"
+	"hash/fnv"
+	"strconv"
 	"sync"
 )
 
@@ -62,4 +65,74 @@ func NewGapBuffer(chars ...string) *GapBuffer {
 	return gb
 }
 
-//
+// BinaryTree
+func Hash(item interface{}) (uint32, error) {
+	//TODO: Support structs
+	var s string
+	switch v := item.(type) {
+	case string:
+		s = v
+	case int:
+		s = strconv.Itoa(v)
+	case float64:
+		s = strconv.FormatFloat(v, 'f', 6, 64)
+	default:
+		return 0, errors.New("Cannot convert to string.")
+	}
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32(), nil
+}
+
+type BinaryTree struct {
+	value interface{}
+	left  *BinaryTree
+	right *BinaryTree
+	hash  uint32
+	mutex *sync.Mutex
+}
+
+func NewBinaryTree(value interface{}) (*BinaryTree, error) {
+	h, err := Hash(value)
+	if err != nil {
+		return nil, err
+	}
+	return &BinaryTree{
+		value,
+		nil,
+		nil,
+		h,
+		&sync.Mutex{},
+	}, nil
+}
+
+func (bt *BinaryTree) Insert(value interface{}) error {
+	bt.mutex.Lock()
+	h, err := Hash(value)
+	if err != nil {
+		return err
+	}
+	if h < bt.hash {
+		if bt.left == nil {
+			node, err := NewBinaryTree(value)
+			if err != nil {
+				return err
+			}
+			bt.left = node
+		} else {
+			bt.left.Insert(value)
+		}
+	} else if h > bt.hash {
+		if bt.right == nil {
+			node, err := NewBinaryTree(value)
+			if err != nil {
+				return err
+			}
+			bt.right = node
+		} else {
+			bt.right.Insert(value)
+		}
+	}
+	bt.mutex.Unlock()
+	return nil
+}
