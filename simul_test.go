@@ -39,4 +39,11 @@ func TestBinaryTree(t *testing.T) {
 		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.left.value)
 	}
 
+	found, err := bt.Find(2)
+	if err != nil {
+		t.Errorf("Error while finding element")
+	}
+	if bt.right != found {
+		t.Errorf("Find did not work. Got: subtree with root value %d. Want: subtree with root value 2", bt.right.value)
+	}
 }

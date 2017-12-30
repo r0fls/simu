@@ -136,3 +136,41 @@ func (bt *BinaryTree) Insert(value interface{}) error {
 	bt.mutex.Unlock()
 	return nil
 }
+
+// Returns nil if not found, error if value is not hashable.
+// Otherwise returns the subtree with root value.
+func (bt *BinaryTree) Find(value interface{}, hash ...uint32) (*BinaryTree, error) {
+	var h uint32
+	var err error
+	if len(hash) == 0 {
+		h, err = Hash(value)
+		if err != nil {
+			return nil, err
+		}
+	} else if len(hash) == 1 {
+		h = hash[0]
+	} else {
+		return nil, errors.New("Too many arguments passed to Find()")
+	}
+
+	if h < bt.hash {
+		return bt.left.Find(value, h)
+	} else if h > bt.hash {
+		return bt.right.Find(value, h)
+	} else {
+		// Hash was found
+		if value != bt.value {
+			return bt, fmt.Errorf("Found matching hash with different value: %v", bt.value)
+		} else {
+			return bt, nil
+		}
+	}
+}
+
+func (bt *BinaryTree) Contains(value interface{}) bool {
+	bt, err := bt.Find(value)
+	if bt != nil && err != nil {
+		return true
+	}
+	return false
+}
