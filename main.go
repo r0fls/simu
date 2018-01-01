@@ -85,7 +85,7 @@ func Hash(item interface{}) (uint32, error) {
 }
 
 type BinaryTree struct {
-	value interface{}
+	Value interface{}
 	left  *BinaryTree
 	right *BinaryTree
 	hash  uint32
@@ -236,8 +236,8 @@ func (bt *BinaryTree) FindWithParent(value interface{}, parent *BinaryTree, hash
 		}
 	} else {
 		// Hash was found
-		if value != bt.value {
-			return bt, parent, fmt.Errorf("Found matching hash with different value: %v", bt.value)
+		if value != bt.Value {
+			return bt, parent, fmt.Errorf("Found matching hash with different value: %v", bt.Value)
 		} else {
 			return bt, parent, nil
 		}

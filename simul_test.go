@@ -31,12 +31,12 @@ func TestBinaryTree(t *testing.T) {
 		t.Errorf("Unable to create binary tree with initial value: %d", val)
 	}
 	bt.Insert(2)
-	if bt.right.value != 2 {
-		t.Errorf("Right node was incorrect. Got: %d. Want: 2", bt.right.value)
+	if bt.right.Value != 2 {
+		t.Errorf("Right node was incorrect. Got: %d. Want: 2", bt.right.Value)
 	}
 	bt.Insert(-1)
-	if bt.left.value != -1 {
-		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.left.value)
+	if bt.left.Value != -1 {
+		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.left.Value)
 	}
 
 	node, err := bt.Find(2)
@@ -44,7 +44,7 @@ func TestBinaryTree(t *testing.T) {
 		t.Errorf("Error while finding element")
 	}
 	if bt.right != node {
-		t.Errorf("Find did not work. Got: subtree with root value %d. Want: subtree with root value 2", bt.right.value)
+		t.Errorf("Find did not work. Got: subtree with root value %d. Want: subtree with root value 2", bt.right.Value)
 	}
 	bt.Delete(2)
 	found := bt.Contains(2)
