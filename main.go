@@ -137,39 +137,117 @@ func (bt *BinaryTree) Insert(value interface{}) error {
 	return nil
 }
 
+func (bt *BinaryTree) Delete(value interface{}) error {
+	node, parent, err := bt.FindWithParent(value, nil)
+	if err != nil {
+		return err
+	}
+	bt.mutex.Lock()
+	// No children
+	if node.left == nil && node.right == nil {
+		if parent.left.hash == node.hash {
+			parent.left = nil
+			bt.mutex.Unlock()
+		} else if parent.right.hash == node.hash {
+			parent.right = nil
+			bt.mutex.Unlock()
+		}
+		return nil
+	}
+	// One child
+	if node.left == nil {
+		if parent.left == node {
+			parent.left = node.right
+			bt.mutex.Unlock()
+		} else if parent.right == node {
+			parent.right = node.right
+			bt.mutex.Unlock()
+		}
+		return nil
+	} else if node.right == nil {
+		if parent.left == node {
+			parent.left = node.left
+			bt.mutex.Unlock()
+		} else if parent.right == node {
+			parent.right = node.left
+			bt.mutex.Unlock()
+		}
+		return nil
+	}
+	// Two children
+	newNode := node.Min()
+	newNode.left = node.left
+	newNode.right = node.right
+	if parent.left == node {
+		parent.left = newNode
+		bt.mutex.Unlock()
+	} else if parent.right == node {
+		parent.right = newNode
+		bt.mutex.Unlock()
+	}
+	return nil
+}
+
+func (bt *BinaryTree) Min() *BinaryTree {
+	node := bt
+	if node == nil {
+		return nil
+	}
+	for node.left != nil {
+		node = node.left
+	}
+	return node
+}
+
 // Returns nil if not found, error if value is not hashable.
 // Otherwise returns the subtree with root value.
 func (bt *BinaryTree) Find(value interface{}, hash ...uint32) (*BinaryTree, error) {
+	node, _, err := bt.FindWithParent(value, nil)
+	return node, err
+}
+
+// Returns nil if not found, error if value is not hashable.
+// Otherwise returns the subtree with root value.
+func (bt *BinaryTree) FindWithParent(value interface{}, parent *BinaryTree, hash ...uint32) (*BinaryTree, *BinaryTree, error) {
 	var h uint32
 	var err error
 	if len(hash) == 0 {
 		h, err = Hash(value)
 		if err != nil {
-			return nil, err
+			return nil, parent, err
 		}
 	} else if len(hash) == 1 {
 		h = hash[0]
 	} else {
-		return nil, errors.New("Too many arguments passed to Find()")
+		return nil, parent, errors.New("Too many arguments passed to Find()")
 	}
 
 	if h < bt.hash {
-		return bt.left.Find(value, h)
+		if bt.left != nil {
+			return bt.left.FindWithParent(value, bt, h)
+		} else {
+			return nil, parent, nil
+		}
 	} else if h > bt.hash {
-		return bt.right.Find(value, h)
+		if bt.right != nil {
+			return bt.right.FindWithParent(value, bt, h)
+		} else {
+			return nil, parent, nil
+		}
 	} else {
 		// Hash was found
 		if value != bt.value {
-			return bt, fmt.Errorf("Found matching hash with different value: %v", bt.value)
+			return bt, parent, fmt.Errorf("Found matching hash with different value: %v", bt.value)
 		} else {
-			return bt, nil
+			return bt, parent, nil
 		}
 	}
+	return nil, parent, nil
 }
 
 func (bt *BinaryTree) Contains(value interface{}) bool {
 	bt, err := bt.Find(value)
-	if bt != nil && err != nil {
+	if bt != nil && err == nil {
 		return true
 	}
 	return false

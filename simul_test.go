@@ -39,11 +39,35 @@ func TestBinaryTree(t *testing.T) {
 		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.left.value)
 	}
 
-	found, err := bt.Find(2)
+	node, err := bt.Find(2)
 	if err != nil {
 		t.Errorf("Error while finding element")
 	}
-	if bt.right != found {
+	if bt.right != node {
 		t.Errorf("Find did not work. Got: subtree with root value %d. Want: subtree with root value 2", bt.right.value)
+	}
+	bt.Delete(2)
+	found := bt.Contains(2)
+	if found {
+		t.Errorf("Delete failed for binary tree no children")
+	}
+
+	// node with one child
+	bt.Insert(2) // hash equal to 923577301
+	bt.Insert(9) // hash equal to 1007465396
+	bt.Delete(2)
+	found2, found9 := bt.Contains(2), bt.Contains(9)
+	if found2 || !found9 {
+		t.Errorf("Delete failed for binary tree with one child")
+	}
+
+	// node with two children
+	bt.Insert(2)
+	bt.Insert(8) // hash equal to 1024243015
+	bt.Delete(9)
+	found2, found9, found8 := bt.Contains(2), bt.Contains(9), bt.Contains(8)
+	if !found2 || found9 || !found8 {
+		t.Errorf("Delete failed for binary tree with two children")
+		t.Errorf("Found 2: Got %t. Want true; Found 9: Got %t. Want false; Found 8: Got %t. Want true", found2, found9, found8)
 	}
 }
