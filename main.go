@@ -116,24 +116,29 @@ func (bt *BinaryTree) Insert(value interface{}) error {
 		if bt.left == nil {
 			node, err := NewBinaryTree(value)
 			if err != nil {
+				bt.mutex.Unlock()
 				return err
 			}
 			bt.left = node
+			bt.mutex.Unlock()
 		} else {
-			bt.left.Insert(value)
+			bt.mutex.Unlock()
+			return bt.left.Insert(value)
 		}
 	} else if h > bt.hash {
 		if bt.right == nil {
 			node, err := NewBinaryTree(value)
 			if err != nil {
+				bt.mutex.Unlock()
 				return err
 			}
 			bt.right = node
+			bt.mutex.Unlock()
 		} else {
-			bt.right.Insert(value)
+			bt.mutex.Unlock()
+			return bt.right.Insert(value)
 		}
 	}
-	bt.mutex.Unlock()
 	return nil
 }
 

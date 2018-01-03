@@ -2,6 +2,7 @@ package simul
 
 import (
 	"testing"
+	"time"
 )
 
 func TestGapBuffer(t *testing.T) {
@@ -69,5 +70,19 @@ func TestBinaryTree(t *testing.T) {
 	if !found2 || found9 || !found8 {
 		t.Errorf("Delete failed for binary tree with two children")
 		t.Errorf("Found 2: Got %t. Want true; Found 9: Got %t. Want false; Found 8: Got %t. Want true", found2, found9, found8)
+	}
+	// test concurrent insert
+	// TODO: get this to work with a waitgroup instead of sleeping
+
+	for i := 100; i < 110; i++ {
+		go bt.Insert(i)
+	}
+
+	time.Sleep(1)
+
+	for i := 100; i < 110; i++ {
+		if !bt.Contains(i) {
+			t.Errorf("Did not find expected value: %d", i)
+		}
 	}
 }
