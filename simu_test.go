@@ -1,4 +1,4 @@
-package simul
+package simu
 
 import (
 	"testing"
