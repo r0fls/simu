@@ -27,12 +27,16 @@ func Hash(item interface{}) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-type BinaryTree struct {
+type Node struct {
 	Value interface{}
-	left  *BinaryTree
-	right *BinaryTree
+	left  *Node
+	right *Node
 	hash  uint32
 	mutex *sync.Mutex
+}
+
+type BinaryTree struct {
+	root *Node
 }
 
 func NewBinaryTree(value interface{}) (*BinaryTree, error) {
@@ -40,123 +44,147 @@ func NewBinaryTree(value interface{}) (*BinaryTree, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &BinaryTree{
+	return &BinaryTree{&Node{
 		value,
 		nil,
 		nil,
 		h,
 		&sync.Mutex{},
-	}, nil
+	}}, nil
 }
 
 func (bt *BinaryTree) Insert(value interface{}) error {
-	bt.mutex.Lock()
+	return bt.root.Insert(value)
+}
+
+func (n *Node) Insert(value interface{}) error {
 	h, err := Hash(value)
 	if err != nil {
 		return err
 	}
-	if h < bt.hash {
-		if bt.left == nil {
+	n.mutex.Lock()
+	if h < n.hash {
+		if n.left == nil {
 			node, err := NewBinaryTree(value)
 			if err != nil {
-				bt.mutex.Unlock()
 				return err
 			}
-			bt.left = node
-			bt.mutex.Unlock()
+			n.left = node.root
+			n.mutex.Unlock()
 		} else {
-			bt.mutex.Unlock()
-			return bt.left.Insert(value)
+			n.mutex.Unlock()
+			return n.left.Insert(value)
 		}
-	} else if h > bt.hash {
-		if bt.right == nil {
+	} else if h > n.hash {
+		if n.right == nil {
 			node, err := NewBinaryTree(value)
 			if err != nil {
-				bt.mutex.Unlock()
+				n.mutex.Unlock()
 				return err
 			}
-			bt.right = node
-			bt.mutex.Unlock()
+			n.right = node.root
+			n.mutex.Unlock()
 		} else {
-			bt.mutex.Unlock()
-			return bt.right.Insert(value)
+			n.mutex.Unlock()
+			return n.right.Insert(value)
 		}
+	} else if h == n.hash {
+		n.mutex.Unlock()
 	}
 	return nil
 }
 
+//TODO add locks
 func (bt *BinaryTree) Delete(value interface{}) error {
-	node, parent, err := bt.FindWithParent(value, nil)
+	node, parent, err := bt.root.FindWithParent(value, nil)
 	if err != nil {
 		return err
+	} else if node == nil {
+		return nil
 	}
-	bt.mutex.Lock()
+	if parent == nil {
+		parent = bt.root
+	}
 	// No children
 	if node.left == nil && node.right == nil {
-		if parent.left.hash == node.hash {
+		if parent == node {
+			bt.root = nil
+		} else if parent.left.hash == node.hash {
 			parent.left = nil
-			bt.mutex.Unlock()
 		} else if parent.right.hash == node.hash {
 			parent.right = nil
-			bt.mutex.Unlock()
 		}
-		return nil
-	}
-	// One child
-	if node.left == nil {
-		if parent.left == node {
+	} else if node.left == nil {
+		// One child
+		if parent == node {
+			bt.root = node.right
+		} else if parent.left == node {
 			parent.left = node.right
-			bt.mutex.Unlock()
 		} else if parent.right == node {
 			parent.right = node.right
-			bt.mutex.Unlock()
 		}
-		return nil
 	} else if node.right == nil {
-		if parent.left == node {
+		if parent == node {
+			bt.root = node.left
+		} else if parent.left == node {
 			parent.left = node.left
-			bt.mutex.Unlock()
 		} else if parent.right == node {
 			parent.right = node.left
-			bt.mutex.Unlock()
 		}
-		return nil
-	}
-	// Two children
-	newNode := node.Min()
-	newNode.left = node.left
-	newNode.right = node.right
-	if parent.left == node {
-		parent.left = newNode
-		bt.mutex.Unlock()
-	} else if parent.right == node {
-		parent.right = newNode
-		bt.mutex.Unlock()
+	} else {
+		// Two children
+		if parent == node {
+			newNode := node.Min()
+			parent.Value = newNode.Value
+			parent.right = node.right
+			parent.left = node.left
+		}
+		newNode := node.Min()
+		newNode.left = node.left
+		newNode.right = node.right
+		if parent.left == node {
+			parent.left = newNode
+		} else if parent.right == node {
+			parent.right = newNode
+		}
 	}
 	return nil
 }
 
-func (bt *BinaryTree) Min() *BinaryTree {
-	node := bt
-	if node == nil {
-		return nil
+func (node *Node) Min() *Node {
+	n := node
+	for n.left != nil {
+		n = n.left
 	}
-	for node.left != nil {
-		node = node.left
+	return n
+}
+
+func (bt *BinaryTree) Min() *Node {
+	node := bt.root
+	if node.left != nil {
+		return node.left.Min()
 	}
 	return node
 }
 
+func (bt *BinaryTree) Max() *Node {
+	n := bt.root
+	for n.right != nil {
+		n = n.right
+	}
+	return n
+}
+
 // Returns nil if not found, error if value is not hashable.
 // Otherwise returns the subtree with root value.
-func (bt *BinaryTree) Find(value interface{}, hash ...uint32) (*BinaryTree, error) {
-	node, _, err := bt.FindWithParent(value, nil)
+func (bt *BinaryTree) Find(value interface{}, hash ...uint32) (*Node, error) {
+	node, _, err := bt.root.FindWithParent(value, nil)
 	return node, err
 }
 
 // Returns nil if not found, error if value is not hashable.
 // Otherwise returns the subtree with root value.
-func (bt *BinaryTree) FindWithParent(value interface{}, parent *BinaryTree, hash ...uint32) (*BinaryTree, *BinaryTree, error) {
+func (node *Node) FindWithParent(value interface{}, parent *Node, hash ...uint32) (*Node, *Node, error) {
 	var h uint32
 	var err error
 	if len(hash) == 0 {
@@ -170,32 +198,32 @@ func (bt *BinaryTree) FindWithParent(value interface{}, parent *BinaryTree, hash
 		return nil, parent, errors.New("Too many arguments passed to Find()")
 	}
 
-	if h < bt.hash {
-		if bt.left != nil {
-			return bt.left.FindWithParent(value, bt, h)
+	if h < node.hash {
+		if node.left != nil {
+			return node.left.FindWithParent(value, node, h)
 		} else {
 			return nil, parent, nil
 		}
-	} else if h > bt.hash {
-		if bt.right != nil {
-			return bt.right.FindWithParent(value, bt, h)
+	} else if h > node.hash {
+		if node.right != nil {
+			return node.right.FindWithParent(value, node, h)
 		} else {
 			return nil, parent, nil
 		}
 	} else {
 		// Hash was found
-		if value != bt.Value {
-			return bt, parent, fmt.Errorf("Found matching hash with different value: %v", bt.Value)
+		if value != node.Value {
+			return node, parent, fmt.Errorf("Found matching hash with different value: %v", node.Value)
 		} else {
-			return bt, parent, nil
+			return node, parent, nil
 		}
 	}
 	return nil, parent, nil
 }
 
 func (bt *BinaryTree) Contains(value interface{}) bool {
-	bt, err := bt.Find(value)
-	if bt != nil && err == nil {
+	node, err := bt.Find(value)
+	if node != nil && err == nil {
 		return true
 	}
 	return false

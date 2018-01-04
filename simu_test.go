@@ -32,20 +32,20 @@ func TestBinaryTree(t *testing.T) {
 		t.Errorf("Unable to create binary tree with initial value: %d", val)
 	}
 	bt.Insert(2)
-	if bt.right.Value != 2 {
-		t.Errorf("Right node was incorrect. Got: %d. Want: 2", bt.right.Value)
+	if bt.root.right.Value != 2 {
+		t.Errorf("Right node was incorrect. Got: %d. Want: 2", bt.root.right.Value)
 	}
 	bt.Insert(-1)
-	if bt.left.Value != -1 {
-		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.left.Value)
+	if bt.root.left.Value != -1 {
+		t.Errorf("Left node was incorrect. Got: %d. Want: -1", bt.root.left.Value)
 	}
 
 	node, err := bt.Find(2)
 	if err != nil {
 		t.Errorf("Error while finding element")
 	}
-	if bt.right != node {
-		t.Errorf("Find did not work. Got: subtree with root value %d. Want: subtree with root value 2", bt.right.Value)
+	if bt.root.right != node {
+		t.Errorf("Find did not work. Got: subtree with root value %d. Want: subtree with root value 2", bt.root.right.Value)
 	}
 	bt.Delete(2)
 	found := bt.Contains(2)
@@ -71,9 +71,19 @@ func TestBinaryTree(t *testing.T) {
 		t.Errorf("Delete failed for binary tree with two children")
 		t.Errorf("Found 2: Got %t. Want true; Found 9: Got %t. Want false; Found 8: Got %t. Want true", found2, found9, found8)
 	}
+
+	_ = bt.Delete(1)
+	if err != nil || bt.Contains(1) {
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+		if bt.Contains(1) {
+			t.Errorf("Delete failed for binary tree root node")
+		}
+	}
+
 	// test concurrent insert
 	// TODO: get this to work with a waitgroup instead of sleeping
-
 	for i := 100; i < 110; i++ {
 		go bt.Insert(i)
 	}
@@ -84,5 +94,46 @@ func TestBinaryTree(t *testing.T) {
 		if !bt.Contains(i) {
 			t.Errorf("Did not find expected value: %d", i)
 		}
+	}
+}
+
+func TestPriorityQueue(t *testing.T) {
+	pq := NewPriorityQueue()
+	pq.Push(3, 3)
+	pq.Push(4, 4)
+	pq.Push(5, 5)
+	pq.Push(10, 5)
+	pq.Push(1, 1)
+	val, _ := pq.Pop()
+	if val != 1 {
+		t.Errorf("PriorityQueue Pop() failed. Got %d. Want: 1", val)
+	}
+	val, _ = pq.Pop()
+	if val != 3 {
+		t.Errorf("PriorityQueue Pop() failed. Got %d. Want: 3", val)
+	}
+	val, _ = pq.Pop()
+	if val != 4 {
+		t.Errorf("PriorityQueue Pop() failed. Got %d. Want: 4", val)
+	}
+	vals := []interface{}{5, 10}
+	val, _ = pq.Pop()
+	for i, v := range vals {
+		if val == v {
+			vals[i] = nil
+			break
+		}
+		t.Errorf("PriorityQueue Pop() failed. Got %d. Want: %v", val, vals)
+	}
+	val, _ = pq.Pop()
+	for i, v := range vals {
+		if v == nil {
+			continue
+		}
+		if val == v {
+			vals[i] = nil
+			break
+		}
+		t.Errorf("PriorityQueue Pop() failed. Got %d. Want: %v", val, vals)
 	}
 }
