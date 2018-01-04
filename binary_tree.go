@@ -105,6 +105,7 @@ func (bt *BinaryTree) Delete(value interface{}) error {
 	if parent == nil {
 		parent = bt.root
 	}
+	parent.mutex.Lock()
 	// No children
 	if node.left == nil && node.right == nil {
 		if parent == node {
@@ -148,6 +149,7 @@ func (bt *BinaryTree) Delete(value interface{}) error {
 			parent.right = newNode
 		}
 	}
+	parent.mutex.Unlock()
 	return nil
 }
 

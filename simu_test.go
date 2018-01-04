@@ -97,6 +97,7 @@ func TestBinaryTree(t *testing.T) {
 	}
 }
 
+//TODO: this should respect the insert order :/
 func TestPriorityQueue(t *testing.T) {
 	pq := NewPriorityQueue()
 	pq.Push(3, 3)
@@ -135,5 +136,18 @@ func TestPriorityQueue(t *testing.T) {
 			break
 		}
 		t.Errorf("PriorityQueue Pop() failed. Got %d. Want: %v", val, vals)
+	}
+}
+
+func TestHuffmanTree(t *testing.T) {
+	charCount := CharCount("abbccc")
+	if charCount["a"] != 1 {
+		t.Errorf("Huffman coding CharCount failed: Got %d. Want 1", charCount["a"])
+	}
+	if charCount["b"] != 2 {
+		t.Errorf("Huffman coding CharCount failed: Got %d. Want 2", charCount["b"])
+	}
+	if charCount["c"] != 3 {
+		t.Errorf("Huffman coding CharCount failed: Got %d. Want 3", charCount["c"])
 	}
 }
